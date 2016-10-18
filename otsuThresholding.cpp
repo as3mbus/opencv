@@ -133,28 +133,46 @@ void drawGrayscale(Mat img){
 
 double countMean(int data[],int start,int end){//end = index terakhir+1
   int sum=0;
+  int count=0;
   for(int i= start;i<end;i++){
+    count=count+i*data[i];
     sum=sum+data[i];
   }
-  return sum/(end-start);
+  return count/sum;
 }
 double countVariance(int data[],int start,int end){
   int mean=countMean(data,start,end);
+  // std::cout << "mean = "<<mean << std::endl;
   double sum=0;
+  int n=0;
   for(int i= start;i<end;i++){
-    sum=sum+(pow((data[i]-mean),2));
+    for(int j=0;j<data[i];j++){
+      sum=sum+(pow((i - mean),2));
+      n++;
+    }
+    // std::cout << "pow = " <<(pow((data[i]-mean),2))<< std::endl;
   }
-  return sum/(end - start);
+  // std::cout << "sum = "<<sum << std::endl;
+  // std::cout << "end-start = "<<end-start << std::endl;
+  // std::cout << "varaaa = "<<sum/(end - start) << std::endl;
+
+  return (double) sum/n;
 }
 
 int otsuThresholding(histogram h){
-  int var[254];
+  double var[254];
   double vki,vka;
   int minindeks=0;
   for(int i=0;i <254;i++){
     var[i]=0;
   }
-  for(int i=0;i<254;i++){
+  int i=0;
+  while (h.aray[i]<1){
+    i++;
+    minindeks=i;
+  }
+  for(i;i<254;i++){
+
     vki=0,vka=0;
     vki=countVariance(h.aray,0,i+1);
     vka=countVariance(h.aray,i+1,256);
@@ -165,12 +183,12 @@ int otsuThresholding(histogram h){
     std::cout << "var["<<i<<"] = "<<var[i] << std::endl;
   }
   std::cout << "minindeks = "<< minindeks << std::endl;
-  for(int i=0;i<254;i++){
-
-  }
-  return 0;
+  return minindeks+1;
 }
 
+int * multiOtsu(histogram h,int times){
+  
+}
 
 Mat imageSegmentation1(Mat Img,int threshold){
     //generate contrast stretched image
@@ -227,9 +245,11 @@ int main( int argc, char** argv ){
     showImage(imageGr,"Grayscale");
     fillHistogram(&before,imageGr);
     statistikHistogram(before,imageGr);
-    std::cout << "otsu : "<<otsuThresholding(before) << std::endl;
-    drawHistogram(before,"Histogram Before");
+    //std::cout << "mean = "<<countVariance(before.aray,1,3) << std::endl;
+    // std::cout << "otsu : "<<otsuThresholding(before) << std::endl;
     showImage(imageSegmentation1(imageGr,otsuThresholding(before)),"Otsu ed");
+    drawHistogram(before,"Histogram Before");
+
     // fillHistogram(&after,imageGrCS);
     // statistikHistogram(after,imageGrCS);
     // drawHistogram(after,"Histogram After");
