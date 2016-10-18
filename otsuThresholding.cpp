@@ -130,7 +130,84 @@ void drawGrayscale(Mat img){
     showImage(Grayscaler(img),"greyscale testing");
 }
 
-int 
+
+double countMean(int data[],int start,int end){//end = index terakhir+1
+  int sum=0;
+  for(int i= start;i<end;i++){
+    sum=sum+data[i];
+  }
+  return sum/(end-start);
+}
+double countVariance(int data[],int start,int end){
+  int mean=countMean(data,start,end);
+  double sum=0;
+  for(int i= start;i<end;i++){
+    sum=sum+(pow((data[i]-mean),2));
+  }
+  return sum/(end - start);
+}
+
+int otsuThresholding(histogram h){
+  int var[254];
+  double vki,vka;
+  int minindeks=0;
+  for(int i=0;i <254;i++){
+    var[i]=0;
+  }
+  for(int i=0;i<254;i++){
+    vki=0,vka=0;
+    vki=countVariance(h.aray,0,i+1);
+    vka=countVariance(h.aray,i+1,256);
+    var[i]=vki+vka;
+    if (var[minindeks]>var[i]){
+      minindeks=i;
+    }
+    std::cout << "var["<<i<<"] = "<<var[i] << std::endl;
+  }
+  std::cout << "minindeks = "<< minindeks << std::endl;
+  for(int i=0;i<254;i++){
+
+  }
+  return 0;
+}
+
+
+Mat imageSegmentation1(Mat Img,int threshold){
+    //generate contrast stretched image
+    int intens=0;
+    Mat Segment=Img;//(image.rows, image.cols, CV_8UC1, Scalar(255, 255, 255));
+    for(int y = 0; y < Segment.rows; y++){
+        for(int x = 0; x < Segment.cols; x++){
+            intens=(int)Img.at<uchar>(y,x);
+            if(intens<=threshold){
+              Segment.at<uchar>(y,x)=(int)cvRound( 0 );
+            }
+            else{
+              Segment.at<uchar>(y,x)=(int)cvRound( 255 );
+            }
+          }
+    }
+    return Segment;
+}
+
+Mat imageSegmentation(Mat Img,int threshold[]){
+    //generate contrast stretched image
+    int intens=0;
+    Mat Segment=Img;//(image.rows, image.cols, CV_8UC1, Scalar(255, 255, 255));
+    for(int y = 0; y < Segment.rows; y++){
+        for(int x = 0; x < Segment.cols; x++){
+            intens=(int)Img.at<uchar>(y,x);
+            int i=0;
+            while (intens>threshold[i]&&i<(sizeofp(threshold)) ){
+            //cout<<h <<"	"<<divider[i]<<endl;
+            i++;
+            }
+            Segment.at<uchar>(y,x)=(int)cvRound( i/(sizeofp(threshold)-1)*255 );
+          }
+    }
+    return Segment;
+}
+
 
 
 int main( int argc, char** argv ){
@@ -150,12 +227,12 @@ int main( int argc, char** argv ){
     showImage(imageGr,"Grayscale");
     fillHistogram(&before,imageGr);
     statistikHistogram(before,imageGr);
+    std::cout << "otsu : "<<otsuThresholding(before) << std::endl;
     drawHistogram(before,"Histogram Before");
-    Mat imageGrCS=contrastStretching2(imageGr,before);
-    showImage(imageGrCS,"Contrast Stretched");
-    fillHistogram(&after,imageGrCS);
-    statistikHistogram(after,imageGrCS);
-    drawHistogram(after,"Histogram After");
+    showImage(imageSegmentation1(imageGr,otsuThresholding(before)),"Otsu ed");
+    // fillHistogram(&after,imageGrCS);
+    // statistikHistogram(after,imageGrCS);
+    // drawHistogram(after,"Histogram After");
     waitKey(0); // Wait for a keystroke in the window
     return 0;
 }
