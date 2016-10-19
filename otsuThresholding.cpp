@@ -138,7 +138,10 @@ double countMean(int data[],int start,int end){//end = index terakhir+1
     count=count+i*data[i];
     sum=sum+data[i];
   }
-  return count/sum;
+  if (sum!=0)
+    return (double) count/sum;
+  else
+    return 0;
 }
 double countVariance(int data[],int start,int end){
   int mean=countMean(data,start,end);
@@ -155,8 +158,11 @@ double countVariance(int data[],int start,int end){
   // std::cout << "sum = "<<sum << std::endl;
   // std::cout << "end-start = "<<end-start << std::endl;
   // std::cout << "varaaa = "<<sum/(end - start) << std::endl;
-
-  return (double) sum/n;
+  // std::cout << "n = "<<n << std::endl;
+  if (n!=0)
+    return (double) sum/n;
+  else
+    return 0;
 }
 
 int otsuThresholding(histogram h){
@@ -167,10 +173,6 @@ int otsuThresholding(histogram h){
     var[i]=0;
   }
   int i=0;
-  while (h.aray[i]<1){
-    i++;
-    minindeks=i;
-  }
   for(i;i<254;i++){
 
     vki=0,vka=0;
@@ -186,8 +188,45 @@ int otsuThresholding(histogram h){
   return minindeks+1;
 }
 
-int * multiOtsu(histogram h,int times){
-  
+int * duoOtsu(histogram h){
+  double var[(int) pow(254,2)][3];
+  double vk[3];
+  int n=0;
+  int minindeks=0;
+  for(int i=0;i < pow(254,2);i++){
+    for(int j=0;j<3;j++){
+      var[i][j]=0;
+    }
+  }
+  int i=0;
+  for(i;i<253;i++){
+    vk[0]=0;
+    vk[0]=countVariance(h.aray,0,i+1);
+    for(int j=i+2; j< 254;j++){
+      vk[1]=0;
+      vk[2]=0;
+
+      vk[1]=countVariance(h.aray,i+1,j+1);
+      vk[2]=countVariance(h.aray,j+1,256);
+      // std::cout << "VK" <<" "<< vk[0]<<" "<<vk[1] <<" "<<vk[2] <<" "<<vk[0]+vk[1]+vk[2]<< std::endl;
+      var[n][0] = vk[0]+vk[1]+vk[2];
+      var[n][1]=i;
+      var[n][2]=j;
+      // std::cout << "var["<<n<<"] = "<<var[n][1] << std::endl;
+
+      // std::cout << "var[minindeks][0] = "<<var[minindeks][0] << std::endl;
+      if (var[minindeks][0]>var[n][0]){
+        minindeks=n;
+      }
+      n++;
+      // std::cout << "minindeks"<<minindeks << std::endl;
+    }
+  }
+  std::cout << "sampai sini" <<(int)var[minindeks][1]<<", "<<(int) var[minindeks][2]<< std::endl;
+  static int index[2]={(int)var[minindeks][1],(int)var[minindeks][2]};
+  // std::cout << "minindeks = "<< minindeks << std::endl;
+  // std::cout << "index"<<index[0]<<", "<<index[1] << std::endl;
+  return index;
 }
 
 Mat imageSegmentation1(Mat Img,int threshold){
@@ -208,6 +247,26 @@ Mat imageSegmentation1(Mat Img,int threshold){
     return Segment;
 }
 
+Mat duoSegmentation(Mat Img,int threshold[]){
+    //generate contrast stretched image
+    int intens=0;
+    Mat Segment=Img;//(image.rows, image.cols, CV_8UC1, Scalar(255, 255, 255));
+    for(int y = 0; y < Segment.rows; y++){
+        for(int x = 0; x < Segment.cols; x++){
+            intens=(int)Img.at<uchar>(y,x);
+            float i=0;
+            while (intens>threshold[(int)i]&&i<2 ){
+            //cout<<h <<"	"<<divider[i]<<endl;
+            i++;
+            }
+            std::cout << "i = "<<(i/2) *255 << std::endl;
+            Segment.at<uchar>(y,x)=(int)cvRound( i/2 *255 );
+          }
+    }
+    return Segment;
+}
+
+
 Mat imageSegmentation(Mat Img,int threshold[]){
     //generate contrast stretched image
     int intens=0;
@@ -215,8 +274,8 @@ Mat imageSegmentation(Mat Img,int threshold[]){
     for(int y = 0; y < Segment.rows; y++){
         for(int x = 0; x < Segment.cols; x++){
             intens=(int)Img.at<uchar>(y,x);
-            int i=0;
-            while (intens>threshold[i]&&i<(sizeofp(threshold)) ){
+            float i=0;
+            while (intens>threshold[(int)i]&&i<(sizeofp(threshold)) ){
             //cout<<h <<"	"<<divider[i]<<endl;
             i++;
             }
@@ -245,8 +304,10 @@ int main( int argc, char** argv ){
     showImage(imageGr,"Grayscale");
     fillHistogram(&before,imageGr);
     statistikHistogram(before,imageGr);
-    //std::cout << "mean = "<<countVariance(before.aray,1,3) << std::endl;
-    // std::cout << "otsu : "<<otsuThresholding(before) << std::endl;
+    // std::cout << "mean = "<<countMean(before.aray,2,5) << std::endl;
+    //  std::cout << "otsu : "<<duoOtsu(before) << std::endl;
+    // int * index=duoOtsu(before);
+    // std::cout << "index"<<index[0]<<", "<<index[1] << std::endl;
     showImage(imageSegmentation1(imageGr,otsuThresholding(before)),"Otsu ed");
     drawHistogram(before,"Histogram Before");
 
