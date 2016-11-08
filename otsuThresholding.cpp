@@ -191,9 +191,9 @@ int otsuThresholding(histogram h){
     if (var[minindeks]>var[i]){
       minindeks=i;
     }
-    std::cout << "var["<<i<<"] = "<<var[i] << std::endl;
+    // std::cout << "var["<<i<<"] = "<<var[i] << std::endl;
   }
-  std::cout << "minindeks = "<< minindeks << std::endl;
+  // std::cout << "minindeks = "<< minindeks << std::endl;
   return minindeks+1;
 }
 
@@ -231,7 +231,7 @@ int * duoOtsu(histogram h){
       // std::cout << "minindeks"<<minindeks << std::endl;
     }
   }
-  std::cout << "sampai sini" <<(int)var[minindeks][1]<<", "<<(int) var[minindeks][2]<< std::endl;
+  // std::cout << "sampai sini" <<(int)var[minindeks][1]<<", "<<(int) var[minindeks][2]<< std::endl;
   static int index[2]={(int)var[minindeks][1],(int)var[minindeks][2]};
   // std::cout << "minindeks = "<< minindeks << std::endl;
   // std::cout << "index"<<index[0]<<", "<<index[1] << std::endl;
@@ -314,7 +314,7 @@ int * duoOtsu(histogram h){
 Mat imageSegmentation1(Mat Img,int threshold){
     //generate contrast stretched image
     int intens=0;
-    Mat Segment=Img;//(image.rows, image.cols, CV_8UC1, Scalar(255, 255, 255));
+    Mat Segment(Img.rows, Img.cols, CV_8UC1, Scalar(255, 255, 255));
     for(int y = 0; y < Segment.rows; y++){
         for(int x = 0; x < Segment.cols; x++){
             intens=(int)Img.at<uchar>(y,x);
@@ -332,7 +332,7 @@ Mat imageSegmentation1(Mat Img,int threshold){
 Mat duoSegmentation(Mat Img,int threshold[]){
     //generate contrast stretched image
     int intens=0;
-    Mat Segment=Img;//(image.rows, image.cols, CV_8UC1, Scalar(255, 255, 255));
+    Mat Segment(Img.rows, Img.cols, CV_8UC1, Scalar(255, 255, 255));
     for(int y = 0; y < Segment.rows; y++){
         for(int x = 0; x < Segment.cols; x++){
             intens=(int)Img.at<uchar>(y,x);
@@ -341,7 +341,7 @@ Mat duoSegmentation(Mat Img,int threshold[]){
             //cout<<h <<"	"<<divider[i]<<endl;
             i++;
             }
-            std::cout << "i = "<<(i/2) *255 << std::endl;
+            // std::cout << "i = "<<(i/2) *255 << std::endl;
             Segment.at<uchar>(y,x)=(int)cvRound( i/2 *255 );
           }
     }
@@ -385,11 +385,13 @@ int main( int argc, char** argv ){
     showImage(imageGr,"Grayscale");
     fillHistogram(&before,imageGr);
     statistikHistogram(before,imageGr);
-
-    drawHistogram(before,"Histogram Before");
     // double ** tessub1 = generateVariance(before,200,1);
-
-     showImage(duoSegmentation(imageGr,duoOtsu(before)),"Otsu ed");
+    int singleThreshold=otsuThresholding(before);
+    int * duoThreshold=duoOtsu(before);
+    std::cout << "Single Threshold\t: "<<singleThreshold << std::endl;
+    std::cout << "Dual Threshold\t\t: "<<duoThreshold[0]<<" , "<<duoThreshold[1] << std::endl;
+    showImage(imageSegmentation1(imageGr,singleThreshold),"Otsu 1");
+    showImage(duoSegmentation(imageGr,duoThreshold),"Otsu 2");
 
     // fillHistogram(&after,imageGrCS);
     // statistikHistogram(after,imageGrCS);
