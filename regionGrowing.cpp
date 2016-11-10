@@ -9,6 +9,15 @@ using namespace cv;
 using namespace std;
 
 void seedGrowing4ByThreshold(Mat seed,Mat image, int simThreshold,int x,int y);
+
+String convertIntString(int x){
+  stringstream convert;
+  string hasil;
+  convert<<x;
+  hasil=convert.str();
+  return hasil;
+}
+
 void showImage(Mat a,string b){
     namedWindow(b, CV_WINDOW_AUTOSIZE);
     imshow(b, a);
@@ -107,13 +116,13 @@ double countSegment(int data[],int start,int end){
   return sum;
 }
 
-double countStandarDeviasi(histogram h,Mat img){
+double countStandarDeviasi(histogram h){
   int intens;
+  int mean=h.avg;
   double xx=0;
-  for(int i=0;i<img.rows;i++){
-    for(int j=0;j<img.cols;j++){
-      intens = (int)img.at<uchar>(i,j);
-      xx+=pow((intens-h.avg),2);
+  for(int i=0;i<256;i++){
+    for(int j=0;j<h.aray[i];j++){
+      xx+=pow((i-h.avg),2);
     }
   }
   double xy=xx/h.jumlahpx-1;
@@ -141,14 +150,82 @@ double countStandarDeviasiByThreshold(histogram h,int lowerThreshold,int upperTh
       return 0;
 }
 
-void statistikHistogram(histogram h,Mat img){
+int otsuThresholding(histogram h){
+  double var[254];
+  double vki,vka;
+  int minindeks=0;
+  for(int i=0;i <254;i++){
+    var[i]=0;
+  }
+  int i=0;
+  for(i;i<254;i++){
+
+    vki=0,vka=0;
+    vki=countVariance(h.aray,0,i+1)*countSegment(h.aray,0,i+1)/h.jumlahpx;
+    vka=countVariance(h.aray,i+1,256)*countSegment(h.aray,i+1,256)/h.jumlahpx;
+    var[i]=vki+vka;
+    if (var[minindeks]>var[i]){
+      minindeks=i;
+    }
+    // std::cout << "var["<<i<<"] = "<<var[i] << std::endl;
+  }
+  // std::cout << "minindeks = "<< minindeks << std::endl;
+  return minindeks+1;
+}
+
+//versi Billy
+int countNumberB(histogram h,int n){
+  int ST=0;
+  int SDKiri= cvRound(countStandarDeviasiByThreshold(h,0,n));
+  int SDKanan=cvRound(countStandarDeviasiByThreshold(h,n,255));
+  int SDTotal=cvRound(countStandarDeviasi(h));
+  if (SDKiri==0||SDKanan==0){
+    if(SDKiri>SDKanan){
+      if (SDTotal>SDKiri)
+        ST=cvRound(SDTotal-SDKiri);
+      else
+        ST=cvRound(SDKiri-SDTotal);
+    }
+
+    else {
+      if (SDTotal>SDKanan)
+        ST=cvRound(SDTotal-SDKanan);
+      else
+        ST=cvRound(SDKanan-SDTotal);
+    }
+
+  }else{
+    if(SDKiri>SDKanan) ST=cvRound(SDKanan);
+    else ST=cvRound(SDKiri);
+  }
+  return ST;
+}
+
+// Versi Kadek
+int countNumberK(histogram h,int n){
+  int ST=0;
+  int SDKiri= cvRound(countStandarDeviasiByThreshold(h,0,n));
+  int SDKanan=cvRound(countStandarDeviasiByThreshold(h,n,255));
+  int SDTotal=cvRound(countStandarDeviasi(h));
+  if (SDKiri==0||SDKanan==0){
+    ST=cvRound(sqrt(SDKiri+SDKanan));
+  }else{
+    if(SDKiri>SDKanan) ST=cvRound(SDKanan);
+    else ST=cvRound(SDKiri);
+  }
+
+  return ST;
+}
+
+
+void statistikHistogram(histogram h){
     cout<<"\nSTATISTIK GAMBAR"<<endl;
     cout<<"\nIntensitas Maksimal\t: "<<h.maks<<endl;
     cout<<"Intensitas Minimal\t: "<<h.mins<<endl;
     cout<<"Total Intensitas\t: "<<h.jumlahint<<endl;
     cout<<"Jumlah Pixel\t\t: "<<h.jumlahpx<<endl;
     cout<<"Intenstitas Rata - rata\t: "<<h.avg<<endl;
-    cout<<"Standar Deviasi\t\t: "<<countStandarDeviasi(h,img)<<endl;
+    cout<<"Standar Deviasi\t\t: "<<countStandarDeviasi(h)<<endl;
 }
 void drawHistogram(histogram h,string name){
     int hist_w = 1280;
@@ -190,6 +267,101 @@ void drawGrayscale(Mat img){
     showImage(Grayscaler(img),"greyscale testing");
 }
 
+int input(histogram h,int n){
+  int input1=0;
+  std::cout << "Special Number\t:" << std::endl;
+  std::cout << "-1. Modus\t:" << std::endl;
+  std::cout << "-2. Otsu Number\t:" << std::endl;
+  std::cout << "-3. countNumberB\t:" << std::endl;
+  std::cout << "-4. countNumberK\t:" << std::endl;
+
+  std::cin >> input1;
+  switch (input1) {
+    case -1:
+      input1=getModusIndeks( h);
+      std::cout << "modus = "<<input1 << std::endl;
+      break;
+    case -2:
+      input1=otsuThresholding(h);
+      std::cout << "Otsu number = "<<input1 << std::endl;
+      break;
+    case -3:
+      input1=countNumberB(h,n);
+      std::cout << "numberB = "<<input1 << std::endl;
+      break;
+    case -4:
+      input1=countNumberK(h,n);
+      std::cout << "numberk = "<<input1 << std::endl;
+      break;
+    default:
+      break;
+  }
+  return input1;
+}
+int input(histogram h,int l,int u){
+  int input1=0;
+  std::cout << "Special Number\t:" << std::endl;
+  std::cout << "-1. Modus\t:" << std::endl;
+  std::cout << "-2. Otsu Number\t:" << std::endl;
+  std::cout << "-3. countNumberBl\t:" << std::endl;
+  std::cout << "-4. countNumberKl\t:" << std::endl;
+  std::cout << "-5. countNumberBu\t:" << std::endl;
+  std::cout << "-6. countNumberKu\t:" << std::endl;
+
+  std::cin >> input1;
+  switch (input1) {
+    case -1:
+      input1=getModusIndeks(h);
+      std::cout << "modus = "<<input1 << std::endl;
+
+      break;
+    case -2:
+      input1=otsuThresholding(h);
+      std::cout << "Otsu number = "<<input1 << std::endl;
+      break;
+    case -3:
+      input1=countNumberB(h,l);
+      std::cout << "numberB left = "<<input1 << std::endl;
+      break;
+    case -4:
+      input1=countNumberK(h,l);
+      std::cout << "numberk left = "<<input1 << std::endl;
+      break;
+    case -5:
+      input1=countNumberB(h,u);
+      std::cout << "numberB right = "<<input1 << std::endl;
+      break;
+    case -6:
+      input1=countNumberK(h,u);
+      std::cout << "numberk right = "<<input1 << std::endl;
+      break;
+    default:
+      break;
+  }
+  return input1;
+}
+int input(histogram h){
+  int input1=0;
+  std::cout << "Special Number\t:" << std::endl;
+  std::cout << "-1. Modus\t:" << std::endl;
+  std::cout << "-2. Otsu Number\t:" << std::endl;
+
+  std::cin >> input1;
+  switch (input1) {
+    case -1:
+      input1=getModusIndeks( h);
+      std::cout << "modus = "<<input1 << std::endl;
+      break;
+    case -2:
+      input1=otsuThresholding(h);
+      std::cout << "Otsu number = "<<input1 << std::endl;
+      break;
+    default:
+      break;
+  }
+  return input1;
+}
+
 Mat seedByThreshold(Mat Img,int lowerThreshold,int upperThreshold){
     //generate contrast stretched image
     int intens=0;
@@ -224,6 +396,46 @@ Mat seedByIntensity(Mat Img,int intensity){
           }
     }
     return seed;
+}
+
+Mat moreSeedByIntensity(Mat Img,Mat seed,int intensity,double TIns){
+    //generate contrast stretched image
+    int intens=0;
+    Mat seed2(Img.rows, Img.cols, CV_8UC1, Scalar(0, 0, 0));;
+    for(int y = 0; y < seed.rows; y++){
+        for(int x = 0; x < seed.cols; x++){
+            intens=(int)Img.at<uchar>(y,x);
+            // std::cout << "intens = "<<(int)seed.at<uchar>(y,x) << std::endl;
+            if(seed.at<uchar>(y,x)!=0){
+              seed2.at<uchar>(y,x)=(int)cvRound(seed.at<uchar>(y,x));
+            }
+            if(intens==intensity){
+              seed2.at<uchar>(y,x)=cvRound(TIns);
+            }
+
+          }
+    }
+    return seed2;
+}
+
+Mat moreSeedByThreshold(Mat Img,Mat seed,int lowerThreshold,int upperThreshold,double TIns){
+    //generate contrast stretched image
+    int intens=0;
+    Mat seed2(Img.rows, Img.cols, CV_8UC1, Scalar(0, 0, 0));;
+    for(int y = 0; y < seed.rows; y++){
+        for(int x = 0; x < seed.cols; x++){
+            intens=(int)Img.at<uchar>(y,x);
+            // std::cout << "intens = "<<(int)seed.at<uchar>(y,x) << std::endl;
+            if(seed.at<uchar>(y,x)!=0){
+              seed2.at<uchar>(y,x)=(int)cvRound(seed.at<uchar>(y,x));
+            }
+            if(intens<=upperThreshold&&intens>=lowerThreshold){
+              seed2.at<uchar>(y,x)=cvRound(TIns);
+            }
+
+          }
+    }
+    return seed2;
 }
 
 void seedGrowUpByThreshold(Mat seed,Mat image, int simThreshold,int x,int y){
@@ -279,48 +491,17 @@ void seedGrowing4ByThreshold(Mat seed,Mat image, int simThreshold,int x,int y){
 
 }
 
-void seedGrowing4ByThreshold2(Mat seed,Mat image, int simThreshold,int x,int y){
-  int U=0,ox=x,oy=y;
-  while (y>0){
-    if((int)seed.at<uchar>(y-1,x)!=255){
-      if(abs((int)image.at<uchar>(y,x)-(int)image.at<uchar>(y-1,x))<=simThreshold){
-        seed.at<uchar>(y-1,x)=(int)cvRound( 255 );
-        U++;
-      }
-      else break;
-    }
-    else break;
-  }
-  int R=0,D=0,L=0;
-  std::cout << "next" << std::endl;
-  for(int i=0;U-i>0;i++){
-    while(x<seed.cols){
-      if((int)seed.at<uchar>(y+U-i,x+1)!=255){
-        if(abs((int)image.at<uchar>(y,x)-(int)image.at<uchar>(y,x+1))<=simThreshold){
-          seed.at<uchar>(y,x+1)=(int)cvRound( 255 );
-          R++;
-        }
-      }
-    }
-  }
-
-}
-
-Mat regionGrowingByThreshold(Mat image, int simThreshold,int seedlowerThreshold, int seedUpperThreshold){
-  Mat seed=seedByThreshold(image, seedlowerThreshold,seedUpperThreshold);
-  std::cout << "rows,cols = "<<seed.rows<<", "<<seed.cols << std::endl;
-  int U=1,R=1,D=1,L=1;
-  int intens;
-  int tx,ty;
+void seedGrowing4ByThreshold2(Mat seed,Mat image, int simThreshold,double tins){
+  int U,ty,tx;
   while (U!=0){
     U=0;
-    std::cout << "Test" << std::endl;
+    // std::cout << "Test" << std::endl;
     for(int y = 0; y < seed.rows; y++){
       for(int x = 0; x < seed.cols; x++){
 
         // intens = seed.at<uchar>(y,x);
         // std::cout << "intens = "<< intens << std::endl;
-        if(seed.at<uchar>(y,x)==255){
+        if(seed.at<uchar>(y,x)==tins){
 
           // seedGrowUpByThreshold(seed,image,simThreshold,x,y);
 
@@ -328,9 +509,9 @@ Mat regionGrowingByThreshold(Mat image, int simThreshold,int seedlowerThreshold,
           ty=y;
 
           while (ty>0){
-            if((int)seed.at<uchar>(ty-1,x)!=255){
+            if((int)seed.at<uchar>(ty-1,x)!=tins){
               if(abs((int)image.at<uchar>(ty,x)-(int)image.at<uchar>(ty-1,x))<=simThreshold){
-                seed.at<uchar>(ty-1,x)=(int)cvRound( 255 );
+                seed.at<uchar>(ty-1,x)=tins;
                 ty--;
                 U++;
               }
@@ -349,14 +530,14 @@ Mat regionGrowingByThreshold(Mat image, int simThreshold,int seedlowerThreshold,
 
         // intens = seed.at<uchar>(y,x);
         // std::cout << "intens = "<< intens << std::endl;
-        if(seed.at<uchar>(y,x)==255){
+        if(seed.at<uchar>(y,x)==tins){
 
           // std::cout << "found" << std::endl;
           tx=x;
           while (tx<seed.cols-1){
-            if((int)seed.at<uchar>(y,tx+1)!=255){
+            if((int)seed.at<uchar>(y,tx+1)!=tins){
               if(abs((int)image.at<uchar>(y,tx)-(int)image.at<uchar>(y,tx+1))<=simThreshold){
-                seed.at<uchar>(y,tx+1)=(int)cvRound( 255 );
+                seed.at<uchar>(y,tx+1)=(int)cvRound( tins );
                 tx++;
                 U++;
               }
@@ -374,16 +555,16 @@ Mat regionGrowingByThreshold(Mat image, int simThreshold,int seedlowerThreshold,
 
         // intens = seed.at<uchar>(y,x);
         // std::cout << "intens = "<< intens << std::endl;
-        if(seed.at<uchar>(y,x)==255){
+        if(seed.at<uchar>(y,x)==tins){
 
           // seedGrowDownByThreshold(seed,image,simThreshold,x,y);
 
           // std::cout << "found" << std::endl;
           ty=y;
           while (ty<seed.rows-1){
-            if((int)seed.at<uchar>(ty+1,x)!=255){
+            if((int)seed.at<uchar>(ty+1,x)!=tins){
               if(abs((int)image.at<uchar>(ty,x)-(int)image.at<uchar>(ty+1,x))<=simThreshold){
-                seed.at<uchar>(ty+1,x)=(int)cvRound( 255 );
+                seed.at<uchar>(ty+1,x)=(int)cvRound( tins );
                 ty++;
                 U++;
               }
@@ -402,14 +583,14 @@ Mat regionGrowingByThreshold(Mat image, int simThreshold,int seedlowerThreshold,
 
         // intens = seed.at<uchar>(y,x);
         // std::cout << "intens = "<< intens << std::endl;
-        if(seed.at<uchar>(y,x)==255){
+        if(seed.at<uchar>(y,x)==tins){
 
           // std::cout << "found" << std::endl;
           tx=x;
           while (tx>0){
-            if((int)seed.at<uchar>(y,tx-1)!=255){
+            if((int)seed.at<uchar>(y,tx-1)!=tins){
               if(abs((int)image.at<uchar>(y,tx)-(int)image.at<uchar>(y,tx-1))<=simThreshold){
-                seed.at<uchar>(y,tx-1)=(int)cvRound( 255 );
+                seed.at<uchar>(y,tx-1)=(int)cvRound( tins );
                 tx--;
                 U++;
               }
@@ -424,139 +605,98 @@ Mat regionGrowingByThreshold(Mat image, int simThreshold,int seedlowerThreshold,
 
 
   }
+
+}
+
+Mat regionGrowingByThreshold(Mat image, int simThreshold,int seedLowerThreshold, int seedUpperThreshold){
+  Mat seed=seedByThreshold(image, seedLowerThreshold,seedUpperThreshold);
+  seedGrowing4ByThreshold2(seed,image,simThreshold,255);
   return seed;
 }
 Mat regionGrowingByIntensity(Mat image, int simThreshold,int seedIntensity){
   Mat seed=seedByIntensity(image, seedIntensity);
-  std::cout << "rows,cols = "<<seed.rows<<", "<<seed.cols << std::endl;
-  int U=1;
-  int intens;
-  int tx,ty;
-  while (U!=0){
-    U=0;
-    for(int y = 0; y < seed.rows; y++){
-      for(int x = 0; x < seed.cols; x++){
-
-        if(seed.at<uchar>(y,x)==255){
-
-          ty=y;
-
-          while (ty>0){
-            if((int)seed.at<uchar>(ty-1,x)!=255){
-              if(abs((int)image.at<uchar>(ty,x)-(int)image.at<uchar>(ty-1,x))<=simThreshold){
-                seed.at<uchar>(ty-1,x)=(int)cvRound( 255 );
-                ty--;
-                U++;
-              }
-              else ty=0;
-            }
-            else ty=0;
-          }
-
-        }
-      }
-    }
-
-
-    for(int y = 0; y < seed.rows; y++){
-      for(int x = 0; x < seed.cols; x++){
-
-        if(seed.at<uchar>(y,x)==255){
-
-          tx=x;
-
-          while (tx<seed.cols-1){
-            if((int)seed.at<uchar>(y,tx+1)!=255){
-              if(abs((int)image.at<uchar>(y,tx)-(int)image.at<uchar>(y,tx+1))<=simThreshold){
-                seed.at<uchar>(y,tx+1)=(int)cvRound( 255 );
-                tx++;
-                U++;
-              }
-              else tx=seed.cols;
-            }
-            else tx=seed.cols;
-          }
-
-        }
-      }
-    }
-
-    for(int y = 0; y < seed.rows; y++){
-      for(int x = 0; x < seed.cols; x++){
-
-        if(seed.at<uchar>(y,x)==255){
-
-          ty=y;
-
-          while (ty<seed.rows-1){
-            if((int)seed.at<uchar>(ty+1,x)!=255){
-              if(abs((int)image.at<uchar>(ty,x)-(int)image.at<uchar>(ty+1,x))<=simThreshold){
-                seed.at<uchar>(ty+1,x)=(int)cvRound( 255 );
-                ty++;
-                U++;
-              }
-              else ty=seed.rows;
-            }
-            else ty=seed.rows;
-          }
-
-
-        }
-      }
-    }
-
-    for(int y = 0; y < seed.rows; y++){
-      for(int x = 0; x < seed.cols; x++){
-
-        if(seed.at<uchar>(y,x)==255){
-
-          tx=x;
-
-          while (tx>0){
-            if((int)seed.at<uchar>(y,tx-1)!=255){
-              if(abs((int)image.at<uchar>(y,tx)-(int)image.at<uchar>(y,tx-1))<=simThreshold){
-                seed.at<uchar>(y,tx-1)=(int)cvRound( 255 );
-                tx--;
-                U++;
-              }
-              else tx=0;
-            }
-            else tx=0;
-          }
-
-        }
-      }
-    }
-
-  }
+  seedGrowing4ByThreshold2(seed,image,simThreshold,255);
   return seed;
 }
 
-// Mat MultiRegionGrowing(){
-//   return 0;
-// }
-
-int otsuThresholding(histogram h){
-  double var[254];
-  double vki,vka;
-  int minindeks=0;
-  for(int i=0;i <254;i++){
-    var[i]=0;
+Mat MoreRegionGrowingByIntensity(Mat image,histogram h,int times){
+  int done=0;
+  int simThreshold,seedintensity;
+  Mat *Sed=new Mat[times];
+  Mat *gro=new Mat[times];
+  std::cout << "Seed Intensity\t: "<<std::endl;
+  seedintensity=input(h);
+  showImage(seedByIntensity(image,seedintensity),"seed ");
+  waitKey(0);
+  std::cout << "Simi Threshold\t: "<<std::endl;
+  simThreshold=input(h,seedintensity);
+  Mat Seed=regionGrowingByIntensity(image,simThreshold,seedintensity);
+  gro[done]=Seed;
+  showImage(gro[done],"Growth ");
+  waitKey(0);
+  done++;
+  while (done<times){
+    std::cout << "Seed Intensity\t: "<<std::endl;
+    seedintensity=input(h);
+    int tins=(double)(times-done+1)/(times+1)*255;
+    Mat seed=moreSeedByIntensity(image,Seed,seedintensity,tins);
+    Sed[done]=seed;
+    showImage(Sed[done],"seed ");
+    waitKey(0);
+    std::cout << "Simi Threshold\t: "<<std::endl;
+    simThreshold=input(h,seedintensity);
+    seedGrowing4ByThreshold2(seed,image,simThreshold,tins);
+    gro[done]=seed;
+    showImage(gro[done],"Growth ");
+    waitKey(0);
+    Seed=seed;
+    done++;
   }
-  int i=0;
-  for(i;i<254;i++){
+  return Seed;
+}
 
-    vki=0,vka=0;
-    vki=countVariance(h.aray,0,i+1)*countSegment(h.aray,0,i+1)/h.jumlahpx;
-    vka=countVariance(h.aray,i+1,256)*countSegment(h.aray,i+1,256)/h.jumlahpx;
-    var[i]=vki+vka;
-    if (var[minindeks]>var[i]){
-      minindeks=i;
-    }
-    // std::cout << "var["<<i<<"] = "<<var[i] << std::endl;
+Mat MoreRegionGrowingByThreshold(Mat image,histogram h,int times){
+  int done=0;
+  int simThreshold,seedLowerThreshold,seedUpperThreshold;
+  Mat *Sed=new Mat[times];
+  Mat *gro=new Mat[times];
+  std::cout << "Seed Upper Threshold\t: "<<std::endl;
+  seedUpperThreshold=input(h);
+  std::cout << "Seed Lower Threshold\t: "<<std::endl;
+  seedLowerThreshold=input(h);
+  showImage(seedByThreshold(image,seedLowerThreshold,seedUpperThreshold),"seed ");
+  waitKey(0);
+  std::cout << "Simi Threshold\t: "<<std::endl;
+  simThreshold=input(h,seedLowerThreshold,seedUpperThreshold);
+  Mat Seed=regionGrowingByThreshold(image,simThreshold,seedLowerThreshold,seedUpperThreshold);
+  gro[done]=Seed;
+  showImage(gro[done],"Growth ");
+  waitKey(0);
+  done++;
+
+  while (done<times){
+    std::cout << "Seed Upper Threshold\t: "<<std::endl;
+    seedUpperThreshold=input(h);
+    std::cout << "Seed Lower Threshold\t: "<<std::endl;
+    seedLowerThreshold=input(h);
+    int tins=(double)(times-done+1)/(times+1)*255;
+
+    Mat seed=moreSeedByThreshold(image,Seed,seedLowerThreshold,seedUpperThreshold,tins);
+    Sed[done]=seed;
+    showImage(Sed[done],"seed ");
+    waitKey(0);
+    std::cout << "Simi Threshold\t: "<<std::endl;
+    simThreshold=input(h,seedLowerThreshold,seedUpperThreshold);
+
+    seedGrowing4ByThreshold2(seed,image,simThreshold,255);
+
+    gro[done]=seed;
+    showImage(gro[done],"Growth ");
+    waitKey(0);
+    Seed=seed;
+    done++;
   }
-  // std::cout << "minindeks = "<< minindeks << std::endl;
-  return minindeks+1;
+  return Seed;
 }
 
 int main( int argc, char** argv ){
@@ -575,106 +715,28 @@ int main( int argc, char** argv ){
     Mat imageGr=Grayscaler(image);
     showImage(imageGr,"Grayscale");
     fillHistogram(&before,imageGr);
-    statistikHistogram(before,imageGr);
+    // statistikHistogram(before,imageGr);
     waitKey(0);
-
-    int input1=0;
-    std::cout << "\n\nselect Seed Method\t: " << std::endl;
-    std::cout << "1. Modus Intensity " << std::endl;
-    std::cout << "2. Otsu Thresholding " << std::endl;
-    std::cout << "3. Manual " << std::endl;
-    std::cin >> input1;
-    int SLT,SUT,ST;
-    Mat imageSeed;
-    if (input1==1){
-      imageSeed = seedByIntensity(imageGr,getModusIndeks(before));
-    }else if(input1==2){
-      SLT=otsuThresholding(before);
-      SUT=255;
-      imageSeed = seedByThreshold(imageGr,SLT,SUT);
-    }else if (input1==3) {
-      std::cout << "Seed lower Threshold\t: ";
-      std::cin >> SLT;
-      std::cout << "Seed upper Threshold\t: ";
-      std::cin >> SUT;
-      imageSeed = seedByThreshold(imageGr,SLT,SUT);
-    }else return 0;
-
-    showImage(imageSeed,"Seed");
-    waitKey(0);
-    int input2=0;
-    std::cout << "\n\nselect Similarity Threshold Method\t: " << std::endl;
-    std::cout << "1. Automatic (Experimental) " << std::endl;
-    std::cout << "2. Manual " << std::endl;
-    std::cin >> input2;
-
-    int SDKiri= cvRound(countStandarDeviasiByThreshold(before,0,getModusIndeks(before)));
-    int SDKanan=cvRound(countStandarDeviasiByThreshold(before,getModusIndeks(before),255));
-    int SDTotal=cvRound(countStandarDeviasi(before,imageGr));
-    std::cout << "SDKiri\t : "<<SDKiri << std::endl;
-    std::cout << "SDKanan\t : "<<SDKanan << std::endl;
-    std::cout << "SDTotal\t: "<<SDTotal  << std::endl;
-
-    switch (input2) {
+    int jumlahsegmentasi;
+    int input=0;
+    std::cout << "jumlah segmentasi : ";
+    std::cin >> jumlahsegmentasi;
+    std::cout << "tipe segmentasi : " << std::endl;
+    std::cout << "1. Threshold" << std::endl;
+    std::cout << "2. intensity" << std::endl;
+    std::cin >> input;
+    switch (input) {
       case 1:
-
-
-        // // Versi Kadek
-        // if (SDKiri==0||SDKanan==0){
-        //   ST=cvRound(sqrt(SDKiri+SDKanan));
-        // }else{
-        //   if(SDKiri>SDKanan) ST=cvRound(SDKanan);
-        //   else ST=cvRound(SDKiri);
-        // }
-
-        // versi ku
-        if (SDKiri==0||SDKanan==0){
-          if(SDKiri>SDKanan){
-            if (SDTotal>SDKiri)
-              ST=cvRound(SDTotal-SDKiri);
-            else
-              ST=cvRound(SDKiri-SDTotal);
-          }
-
-          else {
-            if (SDTotal>SDKanan)
-              ST=cvRound(SDTotal-SDKanan);
-            else
-              ST=cvRound(SDKanan-SDTotal);
-          }
-
-        }else{
-          if(SDKiri>SDKanan) ST=cvRound(SDKanan);
-          else ST=cvRound(SDKiri);
-        }
-        std::cout << "ST = "<<ST << std::endl;
+        MoreRegionGrowingByThreshold(imageGr,before,jumlahsegmentasi);
         break;
       case 2:
-        std::cout << "Similarity Threshold\t: ";
-        std::cin >> ST;
+        MoreRegionGrowingByIntensity(imageGr,before,jumlahsegmentasi);
         break;
       default:
         return 0;
     }
 
-    Mat test;
-    switch (input1) {
-      case 1:
-        test=regionGrowingByIntensity(imageGr,ST,getModusIndeks(before ));
-        break;
-      case 2:case 3:
-        test=regionGrowingByThreshold(imageGr,ST,SLT,SUT);
-        break;
-    }
 
-
-
-
-    showImage(test,"seedafter");
-
-    // fillHistogram(&after,imageGrCS);
-    // statistikHistogram(after,imageGrCS);
-    // drawHistogram(after,"Histogram After");
     waitKey(0); // Wait for a keystroke in the window
     return 0;
 }
