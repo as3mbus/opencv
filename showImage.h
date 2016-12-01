@@ -22,4 +22,7 @@ Mat Grayscaler(Mat img);
 void showImage(Mat image, string name);
 
 string basename(string const& pathname );
+
+String convertIntString(int x);
+
 #endif

@@ -1,49 +1,17 @@
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include "opencv2/imgproc/imgproc.hpp"
-#include <math.h>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
+#include "angleDistance.h"
 
-#define RAD(theta) (3.14)*((double)theta/180.0)
-
-template<typename T,int N>
-//template argument deduction
-int size(T (&arr1)[N]) //Passing the array by reference
-{
-  size_t size;
-  size=sizeof(arr1)/sizeof(arr1[0]);
-
-  std::cout<<size<<std::endl; //Correctly prints the size of arr
-
-  //EDIT
-
-  return N; //Correctly prints the size too [cool trick ;-)]
-}
-using namespace cv;
-using namespace std;
-
-struct position{
-  int x,y;
-};
-
-struct DAShistogram{
-  std::vector<double> arr;
-  position centroid;
-  int segInt;
-  int times,max,min;
-};
-
-struct histogram{
-  int * aray;
-  int maks,mins;
-  double avg;
-  int jumlahint,jumlahpx;
-};
-
+// template<typename T,int N> //template argument deduction
+// int size(T (&arr1)[N]) //Passing the array by reference
+// {
+//   size_t size;
+//   size=sizeof(arr1)/sizeof(arr1[0]);
+//
+//   std::cout<<size<<std::endl; //Correctly prints the size of arr
+//
+//   //EDIT
+//
+//   return N; //Correctly prints the size too [cool trick ;-)]
+// }
 position createPos(int x,int y){
   position a;
   a.x=x;
@@ -51,69 +19,62 @@ position createPos(int x,int y){
   return a;
 }
 
-void seedGrowing4ByThreshold(Mat seed,Mat image, int simThreshold,int x,int y);
-position getCentroid(Mat Img,int segInt);
-position getCentroidBoundary(Mat Img);
-int getDistance(Mat Img,position centroid,int segInt,int theta);
-
-String convertIntString(int x){
-  stringstream convert;
-  string hasil;
-  convert<<x;
-  hasil=convert.str();
-  return hasil;
-}
-
-void showImage(Mat a,string b){
-    namedWindow(b, CV_WINDOW_AUTOSIZE);
-    imshow(b, a);
-}
-
-histogram createHist(int size){
-    histogram h;
-    h.aray=new int[size];
-    for(int i=0;i <size;i++){
-        h.aray[i]=0;
+Mat setCentroid(Mat Img,int segInt){
+  int intens=0;
+  int xc=0,yc=0,n=0;
+  for(int y = 0; y < Img.rows; y++){
+    for(int x = 0; x < Img.cols; x++){
+      intens=(int)Img.at<uchar>(y,x);
+      if(intens==segInt){
+        xc+=x;
+        yc+=y;
+        n++;
+      }
     }
-    return h;
+  }
+  xc=xc/n;
+  yc=yc/n;
+
+  Img.at<uchar>(yc,xc)=0;
+  return Img;
 }
-void fillHistogram(histogram *h,Mat img){
-    h->jumlahint=0;
-    h->jumlahpx=0;
-    h->maks=(int)img.at<uchar>(0,0);
-    h->mins=(int)img.at<uchar>(0,0);
-    int intens;
-    for(int y = 0; y < img.rows; y++){
-        for(int x = 0; x < img.cols; x++){
-            //Inisialisasi intensitas
-            intens = (int)img.at<uchar>(y,x);
-            //parameter rata-rata
-            h->jumlahint += intens;
-            h->jumlahpx++;
-
-            //Mengganti maks dan min
-            if(intens > h->maks){
-                h->maks = intens;
-            }else if(intens < h->mins){
-                h->mins = intens;
-            }
-
-            //Menambah nilai pada histogram
-            h->aray[intens]++;
+position getCentroid(Mat Img,int segInt){
+  position a;
+  int intens=0;
+  int xc=0,yc=0,n=0;
+  for(int y = 0; y < Img.rows; y++){
+    for(int x = 0; x < Img.cols; x++){
+      intens=(int)Img.at<uchar>(y,x);
+      if(intens==segInt){
+        xc+=x;
+        yc+=y;
+        n++;
+      }
+    }
+  }
+  a.x=xc/n;
+  a.y=yc/n;
+  return a;
+}
+position getCentroidBoundary(Mat Img){
+  position a;
+  int intens=0;
+  int xc=0,yc=0,n=0;
+  for(int y = 0; y < Img.rows; y++){
+      for(int x = 0; x < Img.cols; x++){
+          intens=(int)Img.at<uchar>(y,x);
+          if(intens==255){
+            xc+=x;
+            yc+=y;
+            n++;
+          }
         }
-    }
-
-    //menghitung rata-rata
-    h->avg =(double) h->jumlahint/h->jumlahpx;
+  }
+  a.x=xc/n;
+  a.y=yc/n;
+  return a;
 }
 
-int getModus(histogram h){
-    int maks=h.aray[0];
-    for(int i=0;i <256;i++){
-        if (h.aray[i] > maks) maks=h.aray[i];
-    }
-    return maks;
-}
 int getModus(DAShistogram h){
     int maks=h.arr.at(0);
     // std::vector<int>::iterator iter;
@@ -126,142 +87,12 @@ int getModus(DAShistogram h){
     }
     return maks;
 }
-int getModusIndeks(histogram h){
-    int maks=0;
-    for(int i=0;i <256;i++){
-        if (h.aray[i] >h.aray[maks]) maks=i;
-    }
-    return maks;
-}
 int getModusIndeks(DAShistogram h){
     int maks=0;
     for(int i=0;i <h.arr.size();i++){
         if (h.arr.at(i) >h.arr.at(maks)) maks=i;
     }
     return maks;
-}
-
-double countMean(int data[],int start,int end){//end = index terakhir+1
-  int sum=0;
-  int count=0;
-  for(int i= start;i<end;i++){
-    count=count+i*data[i];
-    sum=sum+data[i];
-  }
-  if (sum!=0)
-    return (double) count/sum;
-  else
-    return 0;
-}
-double countVariance(int data[],int start,int end){
-  int mean=countMean(data,start,end);
-  double sum=0;
-  int n=0;
-  for(int i= start;i<end;i++){
-    for(int j=0;j<data[i];j++){
-      sum=sum+(pow((i - mean),2));
-      n++;
-    }
-  }
-  if (n!=0)
-    return (double) sum/n;
-  else
-    return 0;
-}
-double countSegment(int data[],int start,int end){
-  double sum=0;
-  for(int i= start;i<end;i++){
-    sum+=data[i];
-  }
-  return sum;
-}
-
-double countStandarDeviasi(histogram h){
-  int intens;
-  int mean=h.avg;
-  double xx=0;
-  for(int i=0;i<256;i++){
-    for(int j=0;j<h.aray[i];j++){
-      xx+=pow((i-h.avg),2);
-    }
-  }
-  double xy=xx/h.jumlahpx-1;
-  return sqrt(xy);
-}
-double countStandarDeviasiByThreshold(histogram h,int lowerThreshold,int upperThreshold){
-    int mean=countMean(h.aray,lowerThreshold,upperThreshold);
-    // std::cout << "mean = "<<mean << std::endl;
-    double sum=0;
-    int n=0;
-    for(int i= lowerThreshold;i<upperThreshold;i++){
-      for(int j=0;j<h.aray[i];j++){
-        sum=sum+(pow((i - mean),2));
-        n++;
-      }
-      // std::cout << "pow = " <<(pow((data[i]-mean),2))<< std::endl;
-    }
-    // std::cout << "sum = "<<sum << std::endl;
-    // std::cout << "end-start = "<<end-start << std::endl;
-    // std::cout << "varaaa = "<<sum/(end - start) << std::endl;
-    // std::cout << "n = "<<n << std::endl;
-    if (n!=0)
-      return (double) sqrt(sum/n);
-    else
-      return 0;
-}
-
-int otsuThresholding(histogram h){
-  double var[254];
-  double vki,vka;
-  int minindeks=0;
-  for(int i=0;i <254;i++){
-    var[i]=0;
-  }
-  int i=0;
-  for(i;i<254;i++){
-
-    vki=0,vka=0;
-    vki=countVariance(h.aray,0,i+1)*countSegment(h.aray,0,i+1)/h.jumlahpx;
-    vka=countVariance(h.aray,i+1,256)*countSegment(h.aray,i+1,256)/h.jumlahpx;
-    var[i]=vki+vka;
-    if (var[minindeks]>var[i]){
-      minindeks=i;
-    }
-    // std::cout << "var["<<i<<"] = "<<var[i] << std::endl;
-  }
-  // std::cout << "minindeks = "<< minindeks << std::endl;
-  return minindeks+1;
-}
-
-void statistikHistogram(histogram h){
-    cout<<"\nSTATISTIK GAMBAR"<<endl;
-    cout<<"\nIntensitas Maksimal\t: "<<h.maks<<endl;
-    cout<<"Intensitas Minimal\t: "<<h.mins<<endl;
-    cout<<"Total Intensitas\t: "<<h.jumlahint<<endl;
-    cout<<"Jumlah Pixel\t\t: "<<h.jumlahpx<<endl;
-    cout<<"Intenstitas Rata - rata\t: "<<h.avg<<endl;
-    cout<<"Standar Deviasi\t\t: "<<countStandarDeviasi(h)<<endl;
-}
-void drawHistogram(histogram h,string name){
-    int hist_w = 1280;
-    int hist_h = 400;
-    int bin_w = cvRound((double) hist_w/256);
-    float bin_h = (float) hist_h/getModus(h);
-
-    //cout<<hist_h<<"	"<<modus<<"	"<<bin_h;
-
-    Mat histImage(hist_h, hist_w, CV_8UC1, Scalar(255, 255, 255));
-    for (int i=0;i<256;i++){
-      //cout <<cvRound((double)bin_h*histogram[i])<<endl;
-      line(histImage,  //img
-        Point(bin_w*(i), hist_h), //point a
-        Point(bin_w*(i), hist_h - cvRound((double) h.aray[i]*bin_h)),//point b
-        Scalar(0,0,0),//color black
-        bin_w,//thickness
-        8,//linetype
-        0);//Number of fractional bits in the point coordinates.
-    }
-    showImage(histImage,name);
 }
 
 void drawHistogram(DAShistogram h,string name){
@@ -285,7 +116,6 @@ void drawHistogram(DAShistogram h,string name){
   }
   showImage(histImage,name);
 }
-
 void drawNormalHistogram(std::vector<double> h,string name){
   int hist_w = 1280;
   int hist_h = 400;
@@ -306,119 +136,6 @@ void drawNormalHistogram(std::vector<double> h,string name){
       0);//Number of fractional bits in the point coordinates.
   }
   showImage(histImage,name);
-}
-
-
-
-Mat Grayscaler(Mat img){
-    int gr_w = img.cols;
-    int gr_h = img.rows;
-    //cout<<hist_h<<"	"<<modus<<"	"<<bin_h;
-
-    Mat grImage(gr_h, gr_w, CV_8UC1, Scalar(255, 255, 255));
-    for(int y = 0; y < gr_h; y++){
-        for(int x = 0; x < gr_w; x++){
-            Point3_<uchar>* p = img.ptr<Point3_<uchar> >(y,x);
-            grImage.at<uchar>(y,x)=.2126 * p->z +.7152 * p->y+.0722 * p->x;
-        }
-    }
-    return grImage;
-}
-void drawGrayscale(Mat img){
-    showImage(Grayscaler(img),"greyscale testing");
-}
-
-
-Mat seedByThreshold(Mat Img,int lowerThreshold,int upperThreshold){
-    //generate contrast stretched image
-    int intens=0;
-    Mat seed(Img.rows, Img.cols, CV_8UC1, Scalar(255, 255, 255));
-    for(int y = 0; y < seed.rows; y++){
-        for(int x = 0; x < seed.cols; x++){
-            intens=(int)Img.at<uchar>(y,x);
-            if(intens<=upperThreshold&&intens>=lowerThreshold){
-              seed.at<uchar>(y,x)=(int)cvRound( 255 );
-            }
-            else{
-              seed.at<uchar>(y,x)=(int)cvRound( 0 );
-            }
-          }
-    }
-    return seed;
-}
-
-Mat seedByIntensity(Mat Img,int intensity){
-    //generate contrast stretched image
-    int intens=0;
-    Mat seed(Img.rows, Img.cols, CV_8UC1, Scalar(255, 255, 255));
-    for(int y = 0; y < seed.rows; y++){
-        for(int x = 0; x < seed.cols; x++){
-            intens=(int)Img.at<uchar>(y,x);
-            if(intens==intensity){
-              seed.at<uchar>(y,x)=(int)cvRound( 255 );
-            }
-            else{
-              seed.at<uchar>(y,x)=(int)cvRound( 0 );
-            }
-          }
-    }
-    return seed;
-}
-
-Mat setCentroid(Mat Img,int segInt){
-  int intens=0;
-  int xc=0,yc=0,n=0;
-  for(int y = 0; y < Img.rows; y++){
-      for(int x = 0; x < Img.cols; x++){
-          intens=(int)Img.at<uchar>(y,x);
-          if(intens==segInt){
-            xc+=x;
-            yc+=y;
-            n++;
-          }
-        }
-  }
-  xc=xc/n;
-  yc=yc/n;
-
-  Img.at<uchar>(yc,xc)=0;
-  return Img;
-}
-position getCentroid(Mat Img,int segInt){
-  position a;
-  int intens=0;
-  int xc=0,yc=0,n=0;
-  for(int y = 0; y < Img.rows; y++){
-      for(int x = 0; x < Img.cols; x++){
-          intens=(int)Img.at<uchar>(y,x);
-          if(intens==segInt){
-            xc+=x;
-            yc+=y;
-            n++;
-          }
-        }
-  }
-  a.x=xc/n;
-  a.y=yc/n;
-  return a;
-}
-position getCentroidBoundary(Mat Img){
-  position a;
-  int intens=0;
-  int xc=0,yc=0,n=0;
-  for(int y = 0; y < Img.rows; y++){
-      for(int x = 0; x < Img.cols; x++){
-          intens=(int)Img.at<uchar>(y,x);
-          if(intens==255){
-            xc+=x;
-            yc+=y;
-            n++;
-          }
-        }
-  }
-  a.x=xc/n;
-  a.y=yc/n;
-  return a;
 }
 
 Mat drawline(Mat Img,position centroid,int segInt){
@@ -467,7 +184,6 @@ int getDistance(Mat Img,position centroid,int segInt,int theta){
   // std::cout << "x = "<<x << std::endl;
   return i-1;
 }
-
 int getDistanceBoundary(Mat Img, position centroid, int theta){
   bool reachend =false;
   int i=1,intens = 0;
@@ -486,7 +202,6 @@ int getDistanceBoundary(Mat Img, position centroid, int theta){
 
   // std::cout << "x = "<<
 }
-
 int getDistanceTrigonometri(Mat Img,position centroid,int segInt,int theta){
   bool reachend =false;
   int i=1,intens = 0;
@@ -546,8 +261,6 @@ DAShistogram DistanceAngleHistogramBoundary(Mat Img,int times){
   return a;
 }
 
-
-
 void saveDAS(DAShistogram h,string fileName){
   ofstream file;
   const char* filechar = fileName.c_str();
@@ -558,7 +271,6 @@ void saveDAS(DAShistogram h,string fileName){
   }
   file.close();
 }
-
 DAShistogram loadDAS(string fileName){
   DAShistogram h;
   ifstream file;
@@ -587,7 +299,6 @@ bool isSame(DAShistogram a,DAShistogram b){
   }
   return true;
 }
-
 double difference(DAShistogram a,DAShistogram b){
   int modusa=getModusIndeks(a),modusb=getModusIndeks(b);
   double modusdifference;
@@ -701,59 +412,4 @@ Mat boundary(Mat Img, int segInt){
   }
 
   return bound;
-}
-
-int main( int argc, char** argv ){
-    string imageName("../data/HappyFish.jpg"); // by default
-    if( argc > 1){
-        imageName = argv[1];
-    }
-    Mat image;
-
-    image = imread(imageName.c_str(), IMREAD_COLOR); // Read the file
-    if( image.empty() ){ //check invalid input;
-        cout <<  "Could not open or find the image" << std::endl ;
-        return -1;
-    }
-
-    histogram before=createHist(256),after=createHist(256);
-    // showImage(image,"Base Image");
-    Mat imageGr=Grayscaler(image);
-    showImage(imageGr,"Grayscale");
-    fillHistogram(&before,imageGr);
-    statistikHistogram(before);
-    drawHistogram(before,"testing");
-    waitKey(0);
-    Mat Seg = seedByThreshold(imageGr,otsuThresholding(before),255);
-    showImage(Seg,"Otsu");
-    waitKey(0);
-    // Mat Bond = boundary(Seg,0);
-    position tes=getCentroid(Seg,0);
-    showImage(Seg,"Boundary");
-    DAShistogram DH1 = DistanceAngleHistogram(Seg,0 ,72);
-    drawHistogram(DH1,"Histo");
-    string fileName=imageName+".DAS";
-    saveDAS(DH1,fileName);
-    waitKey(0);
-    // normalize (&haha);
-    // drawHistogram(haha,"histo2");
-    // showImage(drawline(Seg,tes,255),"Line");
-    // std::vector<double> haha2 =normalize(haha);
-    // drawNormalHistogram(haha2,"Histo2");
-    // showImage(boundary(Seg,0),"Testinger");
-    waitKey(0);
-    // std::cout << "Modus haha"<<getModus(haha) << std::endl;
-    if(argc>2){
-      string loadFile=argv[2];
-      DAShistogram DH2=loadDAS(loadFile);
-      drawHistogram(DH2,"hehe");
-      std::cout << "is Same"<<isSame(DH1,DH2) << std::endl;
-      std::cout << "difference" <<difference(DH1,DH2)<< std::endl;
-    }
-
-    // file<<
-
-
-    waitKey(0); // Wait for a keystroke in the window
-    return 0;
 }

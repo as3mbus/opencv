@@ -57,3 +57,11 @@ string basename(string const& pathname ){
       pathname.rbegin(), pathname.rend(),MatchPathSeparator() ).base(),
       pathname.end() );
 }
+
+String convertIntString(int x){
+  stringstream convert;
+  string hasil;
+  convert<<x;
+  hasil=convert.str();
+  return hasil;
+}

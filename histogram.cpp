@@ -2,11 +2,13 @@
 
 histogram createHist(int size){
     histogram h;
+    h.aray=new int[size];
     for(int i=0;i <size;i++){
         h.aray[i]=0;
     }
     return h;
 }
+
 void fillHistogram(histogram *h,Mat img){
     h->jumlahint=0;
     h->jumlahpx=0;
@@ -24,7 +26,8 @@ void fillHistogram(histogram *h,Mat img){
             //Mengganti maks dan min
             if(intens > h->maks){
                 h->maks = intens;
-            }else if(intens < h->mins){
+            }
+            if(intens < h->mins){
                 h->mins = intens;
             }
 
@@ -43,19 +46,35 @@ int getModus(histogram h){
     }
     return maks;
 }
-double standarDeviasi(histogram h,Mat img){
-  int intens;
-  double xx=0;
-  for(int i=0;i<img.rows;i++){
-    for(int j=0;j<img.cols;j++){
-      intens = (int)img.at<uchar>(i,j);
-      xx+=pow((intens-h.avg),2);
+int getModusIndeks(histogram h){
+    int maks=0;
+    for(int i=0;i <256;i++){
+        if (h.aray[i] >h.aray[maks]) maks=i;
     }
-  }
-  double xy=xx/h.jumlahpx-1;
-  return sqrt(xy);
+    return maks;
 }
 
+double countStandarDeviasi(histogram h,int lowerThreshold,int upperThreshold){
+    int mean=countMean(h.aray,lowerThreshold,upperThreshold);
+    // std::cout << "mean = "<<mean << std::endl;
+    double sum=0;
+    int n=0;
+    for(int i= lowerThreshold;i<upperThreshold;i++){
+      for(int j=0;j<h.aray[i];j++){
+        sum=sum+(pow((i - mean),2));
+        n++;
+      }
+      // std::cout << "pow = " <<(pow((data[i]-mean),2))<< std::endl;
+    }
+    // std::cout << "sum = "<<sum << std::endl;
+    // std::cout << "end-start = "<<end-start << std::endl;
+    // std::cout << "varaaa = "<<sum/(end - start) << std::endl;
+    // std::cout << "n = "<<n << std::endl;
+    if (n!=0)
+      return (double) sqrt(sum/n);
+    else
+      return 0;
+}
 double countMean(int data[],int start,int end){//end = index terakhir+1
   int sum=0;
   int count=0;
@@ -97,7 +116,6 @@ double countSegment(int data[],int start,int end){
   return sum;
 }
 
-
 void drawHistogram(histogram h,string name){
     int hist_w = 400;
     int hist_h = 200;
@@ -119,12 +137,55 @@ void drawHistogram(histogram h,string name){
     }
     showImage(histImage,name);
 }
-void statistikHistogram(histogram h,Mat img){
+void statistikHistogram(histogram h){
     cout<<"\nSTATISTIK GAMBAR"<<endl;
     cout<<"\nIntensitas Maksimal\t: "<<h.maks<<endl;
     cout<<"Intensitas Minimal\t: "<<h.mins<<endl;
     cout<<"Total Intensitas\t: "<<h.jumlahint<<endl;
     cout<<"Jumlah Pixel\t\t: "<<h.jumlahpx<<endl;
     cout<<"Intenstitas Rata - rata\t: "<<h.avg<<endl;
-    cout<<"Standar Deviasi\t\t: "<<standarDeviasi(h,img)<<endl;
+    cout<<"Standar Deviasi\t\t: "<<countStandarDeviasi(h,0,256)<<endl;
+}
+
+// Unknown Number versi Billy
+int countNumberB(histogram h,int n){
+  int ST=0;
+  int SDKiri= cvRound(countStandarDeviasi(h,0,n));
+  int SDKanan=cvRound(countStandarDeviasi(h,n,255));
+  int SDTotal=cvRound(countStandarDeviasi(h,0,255));
+  if (SDKiri==0||SDKanan==0){
+    if(SDKiri>SDKanan){
+      if (SDTotal>SDKiri)
+        ST=cvRound(SDTotal-SDKiri);
+      else
+        ST=cvRound(SDKiri-SDTotal);
+    }
+
+    else {
+      if (SDTotal>SDKanan)
+        ST=cvRound(SDTotal-SDKanan);
+      else
+        ST=cvRound(SDKanan-SDTotal);
+    }
+
+  }else{
+    if(SDKiri>SDKanan) ST=cvRound(SDKanan);
+    else ST=cvRound(SDKiri);
+  }
+  return ST;
+}
+// Versi Kadek
+int countNumberK(histogram h,int n){
+  int ST=0;
+  int SDKiri= cvRound(countStandarDeviasi(h,0,n));
+  int SDKanan=cvRound(countStandarDeviasi(h,n,255));
+  int SDTotal=cvRound(countStandarDeviasi(h,0,255));
+  if (SDKiri==0||SDKanan==0){
+    ST=cvRound(sqrt(SDKiri+SDKanan));
+  }else{
+    if(SDKiri>SDKanan) ST=cvRound(SDKanan);
+    else ST=cvRound(SDKiri);
+  }
+
+  return ST;
 }

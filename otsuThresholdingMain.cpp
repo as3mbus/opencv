@@ -13,7 +13,7 @@ int main( int argc, char** argv ){
   showImage(imageGr,"Grayscale");
   fillHistogram(&before,imageGr);
 
-  statistikHistogram(before,imageGr);
+  statistikHistogram(before);
 
   waitKey(0);
 
