@@ -1,8 +1,5 @@
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <iostream>
-#include <string>
+#include "showImage.h"
+
 using namespace cv;
 using namespace std;
 
@@ -11,11 +8,27 @@ struct MatchPathSeparator{
     return ch == '/';
   }
 };
+
 // struct MatchPathSeparator{
 //     bool operator()( char ch ) const{
 //         return ch == '\\' || ch == '/';
 //     }
 // }; //for windows path
+
+Mat Grayscaler(Mat img){
+    int gr_w = img.cols;
+    int gr_h = img.rows;
+    //cout<<hist_h<<"	"<<modus<<"	"<<bin_h;
+
+    Mat grImage(gr_h, gr_w, CV_8UC1, Scalar(255, 255, 255));
+    for(int y = 0; y < gr_h; y++){
+        for(int x = 0; x < gr_w; x++){
+            Point3_<uchar>* p = img.ptr<Point3_<uchar> >(y,x);
+            grImage.at<uchar>(y,x)=.2126 * p->z +.7152 * p->y+.0722 * p->x;
+        }
+    }
+    return grImage;
+}
 
 Mat loadImage(string imageDirName){
   string imageName("../data/HappyFish.jpg"); // by default
@@ -33,7 +46,7 @@ Mat loadImage(string imageDirName){
   else return image;
 }
 
-void showImage(string name, Mat image){
+void showImage(Mat image, string name){
   namedWindow( name, WINDOW_AUTOSIZE ); // Create a window for display.
   imshow( name, image );
 }
@@ -43,10 +56,4 @@ string basename(string const& pathname ){
     find_if(
       pathname.rbegin(), pathname.rend(),MatchPathSeparator() ).base(),
       pathname.end() );
-}
-
-int main( int argc, char** argv ){
-  showImage(basename(argv[1]),loadImage(argv[1]));
-  waitKey(0);
-
 }
