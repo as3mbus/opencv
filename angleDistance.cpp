@@ -96,8 +96,8 @@ int getModusIndeks(DAShistogram h){
 }
 
 void drawHistogram(DAShistogram h,string name){
-  int hist_w = 1280;
-  int hist_h = 400;
+  int hist_w = 512;
+  int hist_h = 100;
   int bin_w = cvRound((double) hist_w/h.arr.size());
   float bin_h = (float) hist_h/getModus(h);
 
@@ -289,17 +289,17 @@ DAShistogram loadDAS(string fileName){
 }
 
 bool isSame(DAShistogram a,DAShistogram b){
-  int modusa=getModusIndeks(a),modusb=getModusIndeks(b);
-  double scale=(double) (b.max) /(a.max);
-  std::cout << "b.max, a.max = "<<b.max<<" , "<<a.max  << std::endl;
-  for(int i=0;i<a.times;i++){
-    std::cout<<(int) (a.arr.at((modusa+i)%a.times)*scale) << " = = "<<b.arr.at((modusb+i)%b.times)<< std::endl;
-    if( (int) (a.arr.at((modusa+i)%a.times)*scale) !=b.arr.at((modusb+i)%b.times))
-      std::cout << "difference = " <<(abs( (int) (a.arr.at((modusa+i)%a.times)*scale) - (int) (b.arr.at((modusb+i)%b.times))))<< std::endl;
-  }
-  return true;
+  // int modusa=getModusIndeks(a),modusb=getModusIndeks(b);
+  // double scale=(double) (b.max) /(a.max);
+  // std::cout << "b.max, a.max = "<<b.max<<" , "<<a.max  << std::endl;
+  // for(int i=0;i<a.times;i++){
+  //   std::cout<<(int) (a.arr.at((modusa+i)%a.times)*scale) << " = = "<<b.arr.at((modusb+i)%b.times)<< std::endl;
+  //   if( (int) (a.arr.at((modusa+i)%a.times)*scale) !=b.arr.at((modusb+i)%b.times))
+  //     std::cout << "difference = " <<(abs( (int) (a.arr.at((modusa+i)%a.times)*scale) - (int) (b.arr.at((modusb+i)%b.times))))<< std::endl;
+  // }
+  return differenceMean(a,b)<=2;
 }
-double difference(DAShistogram a,DAShistogram b){
+double differenceMean(DAShistogram a,DAShistogram b){
   int modusa=getModusIndeks(a),modusb=getModusIndeks(b);
   double modusdifference;
   double x=0,diff=0;;
@@ -311,10 +311,10 @@ double difference(DAShistogram a,DAShistogram b){
   double scale=(double) (b.max) /(a.max);
 
   for(int i=0;i<a.times;i++){
-    if(a.arr.at((modusa+i)%a.times)*scale!=b.arr.at((modusb+i)%b.times)){
-      diff = abs(a.arr.at((modusa+i)%a.times)-b.arr.at((modusb+i)%b.times));
-      x+=diff;
-    }
+    diff = abs(a.arr.at((modusa+i)%a.times)*scale - b.arr.at((modusb+i)%b.times));
+    // std::cout << "diff = "<<(int)diff << '\n';
+    x+=diff;
+
   }
   return x/a.arr.size();
 }
@@ -365,7 +365,7 @@ Mat boundary(Mat Img, int segInt){
       }
     }
   }
-  std::cout << "P0 = "<<p.x<<" , "<<p.y << std::endl;
+  // std::cout << "P0 = "<<p.x<<" , "<<p.y << std::endl;
   while(Img.at<uchar>( p.y + que.at(i).y ,p.x + que.at(i).x )!=segInt&&i<que.size()){
     // std::cout<< i  << " x , y = "<<p.x + que.at(i).x <<" "<<p.y + que.at(i).y << std::endl;
     i++;
@@ -374,38 +374,38 @@ Mat boundary(Mat Img, int segInt){
   bound.at<uchar>(p.y+que.at(i).y,p.x+que.at(i).x)= 255;
   p.y=p.y+que.at(i).y;
   p.x=p.x+que.at(i).x;
-  std::cout << "P = "<<p.x<<" , "<<p.y << std::endl;
+  // std::cout << "P = "<<p.x<<" , "<<p.y << std::endl;
   i=0;
 
   while(true){
-    std::cout << "P0 = "<<p.x<<" , "<<p.y << std::endl;
+    // std::cout << "P0 = "<<p.x<<" , "<<p.y << std::endl;
     bpx = b.x-p.x;
     bpy = b.y-p.y;
-    std::cout << "b = "<<b.x<<" , "<<b.y << std::endl;
-    std::cout << "bpx , bpy "<<bpx<<" , "<<bpy << std::endl;
+    // std::cout << "b = "<<b.x<<" , "<<b.y << std::endl;
+    // std::cout << "bpx , bpy "<<bpx<<" , "<<bpy << std::endl;
     for (int in=0;in<que.size();in++){
       if(bpx==que.at(in).x&&bpy==que.at(in).y){
         i=in+1;
         break;
       }
     }
-    std::cout << "i "<< i << std::endl;
+    // std::cout << "i "<< i << std::endl;
 
     // std::cout << "a" << std::endl;
     for(int x=0;x<que.size();x++){
         if(Img.at<uchar>(p.y+que.at((i+x)%8).y,p.x+que.at((i+x)%8 ).x)==segInt){
           i=(i+x)%8;
-          std::cout << "i"<< i  << std::endl;
+          // std::cout << "i"<< i  << std::endl;
           x=que.size();
         }
     }
-    std::cout << "a" << std::endl;
+    // std::cout << "a" << std::endl;
     bound.at<uchar>(p.y+que.at(i).y,p.x+que.at(i).x)= 255;
     b.x=p.x;
     b.y=p.y;
     p.y=p.y+que.at(i%8).y;
     p.x=p.x+que.at(i%que.size()).x;
-    std::cout << "P = "<<p.x<<" , "<<p.y << std::endl;
+    // std::cout << "P = "<<p.x<<" , "<<p.y << std::endl;
 
     if (p.x==p0.x&&p.y==p0.y)break;
   }

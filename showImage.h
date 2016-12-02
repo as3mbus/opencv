@@ -16,6 +16,8 @@ using namespace std;
 //     }
 // }; //for windows path
 
+std::string dirnameOf(const std::string& fname);
+
 Mat loadImage(string imageDirName);
 Mat Grayscaler(Mat img);
 

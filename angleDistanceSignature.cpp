@@ -1,6 +1,7 @@
 #include "showImage.h"
 #include "histogram2.h"
 #include "angleDistance.h"
+#include "otsuThresholding.h"
 #include "imageSegmentation.h"
 
 int main( int argc, char** argv ){
@@ -11,8 +12,6 @@ int main( int argc, char** argv ){
     showImage(imageGr,"Grayscale");
     waitKey(0);
     fillHistogram(&before,imageGr);
-    drawHistogram(before,"testing");
-    waitKey(0);
 
     statistikHistogram(before);
     Mat Seg = singleThresholdSegmentation(imageGr,otsuThresholding(before),255);
@@ -21,13 +20,15 @@ int main( int argc, char** argv ){
     int midObject;
     std::cout << "what middle object intensity u see ? 255 (white )/ 0 Black" << '\n';
     cin>>midObject;
-    Mat Bond = boundary(Seg,midObject);
+
+    // Mat Bond = boundary(Seg,midObject);
+    // showImage(Bond,"Boundary");
     position tes=getCentroid(Seg,midObject);
-    showImage(Bond,"Boundary");
     DAShistogram DH1 = DistanceAngleHistogram(Seg,midObject ,72);
     drawHistogram(DH1,"Histo");
     string fileName=argv[1];
-    fileName=+".DAS";
+    fileName+=".DAS";
+    // std::cout << "fileName = "<<fileName << '\n';
     saveDAS(DH1,fileName);
     waitKey(0);
     // normalize (&haha);
@@ -38,13 +39,7 @@ int main( int argc, char** argv ){
     // showImage(boundary(Seg,0),"Testinger");
     // waitKey(0);
     // std::cout << "Modus haha"<<getModus(haha) << std::endl;
-    if(argc>2){
-      string loadFile=argv[2];
-      DAShistogram DH2=loadDAS(loadFile);
-      drawHistogram(DH2,"hehe");
-      std::cout << "is Same"<<isSame(DH1,DH2) << std::endl;
-      std::cout << "difference" <<difference(DH1,DH2)<< std::endl;
-    }
+
 
     return 0;
 }

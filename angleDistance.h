@@ -60,7 +60,7 @@ void saveDAS(DAShistogram h,string fileName);
 DAShistogram loadDAS(string fileName);
 
 bool isSame(DAShistogram a,DAShistogram b);
-double difference(DAShistogram a,DAShistogram b);
+double differenceMean(DAShistogram a,DAShistogram b);
 
 std::vector<double> normalize(DAShistogram h);
 void normalize(DAShistogram * h);
