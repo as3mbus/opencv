@@ -366,10 +366,9 @@ Mat boundary(Mat Img, int segInt){
     }
   }
   std::cout << "P0 = "<<p.x<<" , "<<p.y << std::endl;
-
   while(Img.at<uchar>( p.y + que.at(i).y ,p.x + que.at(i).x )!=segInt&&i<que.size()){
+    // std::cout<< i  << " x , y = "<<p.x + que.at(i).x <<" "<<p.y + que.at(i).y << std::endl;
     i++;
-    std::cout << "x , y = "<<p.x + que.at(i).x <<" "<<p.y + que.at(i).y << std::endl;
   }
 
   bound.at<uchar>(p.y+que.at(i).y,p.x+que.at(i).x)= 255;

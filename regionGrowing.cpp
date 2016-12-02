@@ -1,4 +1,6 @@
+#include "imageSegmentation.h"
 #include "regionGrowing.h"
+#include "histogram2.h"
 
 int input(histogram h,int n){
   int input1=0;
@@ -11,7 +13,7 @@ int input(histogram h,int n){
   std::cin >> input1;
   switch (input1) {
     case -1:
-      input1=getModusIndeks( h);
+      input1=getModusIndeks(h.aray);
       std::cout << "modus = "<<input1 << std::endl;
       break;
     case -2:
@@ -19,11 +21,11 @@ int input(histogram h,int n){
       std::cout << "Otsu number = "<<input1 << std::endl;
       break;
     case -3:
-      input1=countNumberB(h,n);
+      input1=countNumberB(h.aray,n);
       std::cout << "numberB = "<<input1 << std::endl;
       break;
     case -4:
-      input1=countNumberK(h,n);
+      input1=countNumberK(h.aray,n);
       std::cout << "numberk = "<<input1 << std::endl;
       break;
     default:
@@ -44,7 +46,7 @@ int input(histogram h,int l,int u){
   std::cin >> input1;
   switch (input1) {
     case -1:
-      input1=getModusIndeks(h);
+      input1=getModusIndeks(h.aray);
       std::cout << "modus = "<<input1 << std::endl;
 
       break;
@@ -53,19 +55,19 @@ int input(histogram h,int l,int u){
       std::cout << "Otsu number = "<<input1 << std::endl;
       break;
     case -3:
-      input1=countNumberB(h,l);
+      input1=countNumberB(h.aray,l);
       std::cout << "numberB left = "<<input1 << std::endl;
       break;
     case -4:
-      input1=countNumberK(h,l);
+      input1=countNumberK(h.aray,l);
       std::cout << "numberk left = "<<input1 << std::endl;
       break;
     case -5:
-      input1=countNumberB(h,u);
+      input1=countNumberB(h.aray,u);
       std::cout << "numberB right = "<<input1 << std::endl;
       break;
     case -6:
-      input1=countNumberK(h,u);
+      input1=countNumberK(h.aray,u);
       std::cout << "numberk right = "<<input1 << std::endl;
       break;
     default:
@@ -82,7 +84,7 @@ int input(histogram h){
   std::cin >> input1;
   switch (input1) {
     case -1:
-      input1=getModusIndeks( h);
+      input1=getModusIndeks( h.aray);
       std::cout << "modus = "<<input1 << std::endl;
       break;
     case -2:
@@ -93,79 +95,6 @@ int input(histogram h){
       break;
   }
   return input1;
-}
-
-Mat seedByThreshold(Mat Img,int lowerThreshold,int upperThreshold){
-    //generate contrast stretched image
-    int intens=0;
-    Mat seed(Img.rows, Img.cols, CV_8UC1, Scalar(255, 255, 255));
-    for(int y = 0; y < seed.rows; y++){
-        for(int x = 0; x < seed.cols; x++){
-            intens=(int)Img.at<uchar>(y,x);
-            if(intens<=upperThreshold&&intens>=lowerThreshold){
-              seed.at<uchar>(y,x)=(int)cvRound( 255 );
-            }
-            else{
-              seed.at<uchar>(y,x)=(int)cvRound( 0 );
-            }
-          }
-    }
-    return seed;
-}
-Mat seedByIntensity(Mat Img,int intensity){
-    //generate contrast stretched image
-    int intens=0;
-    Mat seed(Img.rows, Img.cols, CV_8UC1, Scalar(255, 255, 255));
-    for(int y = 0; y < seed.rows; y++){
-        for(int x = 0; x < seed.cols; x++){
-            intens=(int)Img.at<uchar>(y,x);
-            if(intens==intensity){
-              seed.at<uchar>(y,x)=(int)cvRound( 255 );
-            }
-            else{
-              seed.at<uchar>(y,x)=(int)cvRound( 0 );
-            }
-          }
-    }
-    return seed;
-}
-
-Mat moreSeedByIntensity(Mat Img,Mat seed,int intensity,double TIns){
-    //generate contrast stretched image
-    int intens=0;
-    Mat seed2(Img.rows, Img.cols, CV_8UC1, Scalar(0, 0, 0));;
-    for(int y = 0; y < seed.rows; y++){
-        for(int x = 0; x < seed.cols; x++){
-            intens=(int)Img.at<uchar>(y,x);
-            if(seed.at<uchar>(y,x)!=0){
-              seed2.at<uchar>(y,x)=(int)cvRound(seed.at<uchar>(y,x));
-            }
-            if(intens==intensity){
-              seed2.at<uchar>(y,x)=cvRound(TIns);
-            }
-
-          }
-    }
-    return seed2;
-}
-Mat moreSeedByThreshold(Mat Img,Mat seed,int lowerThreshold,int upperThreshold,double TIns){
-    //generate contrast stretched image
-    int intens=0;
-    Mat seed2(Img.rows, Img.cols, CV_8UC1, Scalar(0, 0, 0));;
-    for(int y = 0; y < seed.rows; y++){
-        for(int x = 0; x < seed.cols; x++){
-            intens=(int)Img.at<uchar>(y,x);
-            // std::cout << "intens = "<<(int)seed.at<uchar>(y,x) << std::endl;
-            if(seed.at<uchar>(y,x)!=0){
-              seed2.at<uchar>(y,x)=(int)cvRound(seed.at<uchar>(y,x));
-            }
-            if(intens<=upperThreshold&&intens>=lowerThreshold){
-              seed2.at<uchar>(y,x)=cvRound(TIns);
-            }
-
-          }
-    }
-    return seed2;
 }
 
 void seedGrowUpByThreshold(Mat seed,Mat image, int simThreshold,int x,int y){
@@ -338,12 +267,12 @@ void seedGrowing4ByThreshold2(Mat seed,Mat image, int simThreshold,double tins){
 }
 
 Mat regionGrowingByThreshold(Mat image, int simThreshold,int seedLowerThreshold, int seedUpperThreshold){
-  Mat seed=seedByThreshold(image, seedLowerThreshold,seedUpperThreshold);
+  Mat seed=singleThresholdSegmentation(image, seedLowerThreshold,seedUpperThreshold);
   seedGrowing4ByThreshold2(seed,image,simThreshold,255);
   return seed;
 }
 Mat regionGrowingByIntensity(Mat image, int simThreshold,int seedIntensity){
-  Mat seed=seedByIntensity(image, seedIntensity);
+  Mat seed=singleIntensitySegmentation(image, seedIntensity);
   seedGrowing4ByThreshold2(seed,image,simThreshold,255);
   return seed;
 }
@@ -355,7 +284,7 @@ Mat MoreRegionGrowingByIntensity(Mat image,histogram h,int times){
   Mat *gro=new Mat[times];
   std::cout << "Seed Intensity\t: "<<std::endl;
   seedintensity=input(h);
-  showImage(seedByIntensity(image,seedintensity),"seed ");
+  showImage(singleIntensitySegmentation(image,seedintensity),"seed ");
   waitKey(0);
   std::cout << "Simi Threshold\t: "<<std::endl;
   simThreshold=input(h,seedintensity);
@@ -368,7 +297,7 @@ Mat MoreRegionGrowingByIntensity(Mat image,histogram h,int times){
     std::cout << "Seed Intensity\t: "<<std::endl;
     seedintensity=input(h);
     int tins=(double)(times-done+1)/(times+1)*255;
-    Mat seed=moreSeedByIntensity(image,Seed,seedintensity,tins);
+    Mat seed=moreIntensitySegmentation(image,Seed,seedintensity,tins);
     Sed[done]=seed;
     showImage(Sed[done],"seed ");
     waitKey(0);
@@ -383,7 +312,6 @@ Mat MoreRegionGrowingByIntensity(Mat image,histogram h,int times){
   }
   return Seed;
 }
-
 Mat MoreRegionGrowingByThreshold(Mat image,histogram h,int times){
   int done=0;
   int simThreshold,seedLowerThreshold,seedUpperThreshold;
@@ -393,7 +321,7 @@ Mat MoreRegionGrowingByThreshold(Mat image,histogram h,int times){
   seedUpperThreshold=input(h);
   std::cout << "Seed Lower Threshold\t: "<<std::endl;
   seedLowerThreshold=input(h);
-  showImage(seedByThreshold(image,seedLowerThreshold,seedUpperThreshold),"seed ");
+  showImage(singleThresholdSegmentation(image,seedLowerThreshold,seedUpperThreshold),"seed ");
   waitKey(0);
   std::cout << "Simi Threshold\t: "<<std::endl;
   simThreshold=input(h,seedLowerThreshold,seedUpperThreshold);
@@ -410,14 +338,14 @@ Mat MoreRegionGrowingByThreshold(Mat image,histogram h,int times){
     seedLowerThreshold=input(h);
     int tins=(double)(times-done+1)/(times+1)*255;
 
-    Mat seed=moreSeedByThreshold(image,Seed,seedLowerThreshold,seedUpperThreshold,tins);
+    Mat seed=moreThresholdSegmentation(image,Seed,seedLowerThreshold,seedUpperThreshold,tins);
     Sed[done]=seed;
     showImage(Sed[done],"seed ");
     waitKey(0);
     std::cout << "Simi Threshold\t: "<<std::endl;
     simThreshold=input(h,seedLowerThreshold,seedUpperThreshold);
 
-    seedGrowing4ByThreshold2(seed,image,simThreshold,255);
+    seedGrowing4ByThreshold2(seed,image,simThreshold,tins);
 
     gro[done]=seed;
     showImage(gro[done],"Growth ");

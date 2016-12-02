@@ -1,10 +1,5 @@
 #include "otsuThresholding.h"
 
-int sizeofp(int *p){
-   return sizeof(p)/sizeof p[0];// you cant get the size of empty array
-    //http://stackoverflow.com/questions/492384/how-to-find-the-sizeofa-pointer-pointing-to-an-array
-    //array sizeof : http://stackoverflow.com/questions/1898657/result-of-sizeof-on-array-of-structs-in-c
-}
 
 int otsuThresholding(histogram h){
   double var[254];

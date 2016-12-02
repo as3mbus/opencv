@@ -1,66 +1,69 @@
-#include "histogram.h"
+#include "histogram2.h"
 
 histogram createHist(int size){
-    histogram h;
-    h.aray=new int[size];
-    for(int i=0;i <size;i++){
-        h.aray[i]=0;
-    }
-    return h;
+  histogram h;
+  for(int i=0;i <size;i++){
+      h.aray.push_back(0);
+  }
+  return h;
 }
 
 void fillHistogram(histogram *h,Mat img){
-    h->jumlahint=0;
-    h->jumlahpx=0;
-    h->maks=(int)img.at<uchar>(0,0);
-    h->mins=(int)img.at<uchar>(0,0);
-    int intens;
-    for(int y = 0; y < img.rows; y++){
-        for(int x = 0; x < img.cols; x++){
-            //Inisialisasi intensitas
-            intens = (int)img.at<uchar>(y,x);
-            //parameter rata-rata
-            h->jumlahint += intens;
-            h->jumlahpx++;
+  h->jumlahint=0;
+  h->jumlahpx=0;
+  h->maks=(int)img.at<uchar>(0,0);
+  h->mins=(int)img.at<uchar>(0,0);
+  int intens;
+  for(int y = 0; y < img.rows; y++){
+      for(int x = 0; x < img.cols; x++){
+          //Inisialisasi intensitas
+          intens = (int)img.at<uchar>(y,x);
+          //parameter rata-rata
+          h->jumlahint += intens;
+          h->jumlahpx++;
 
-            //Mengganti maks dan min
-            if(intens > h->maks){
-                h->maks = intens;
-            }
-            if(intens < h->mins){
-                h->mins = intens;
-            }
+          //Mengganti maks dan min
+          if(intens > h->maks){
+              h->maks = intens;
+          }
+          if(intens < h->mins){
+              h->mins = intens;
+          }
 
-            //Menambah nilai pada histogram
-            h->aray[intens]++;
-        }
-    }
+          //Menambah nilai pada histogram
+          h->aray.at(intens)++;
+      }
+  }
 
-    //menghitung rata-rata
-    h->avg =(double) h->jumlahint/h->jumlahpx;
+  //menghitung rata-rata
+  h->avg =(double) h->jumlahint/h->jumlahpx;
 }
-int getModus(int data[]){
-    int maks=data[0];
+
+int getModus(std::vector<int> data){
+    int maks=data.at(0);
+    int freq;
     for(int i=0;i <256;i++){
-        if (data[i] > maks) maks=data[i];
+      freq=data.at(i);
+      if (freq > maks) maks=freq;
     }
     return maks;
 }
-int getModusIndeks(int data[]){
+int getModusIndeks(std::vector<int> data){
     int maks=0;
     for(int i=0;i <256;i++){
-        if (data[i] >data[maks]) maks=i;
+        if (data.at(i) >data.at(maks)) maks=i;
     }
     return maks;
 }
 
-double countStandarDeviasi(int data[],int lowerThreshold,int upperThreshold){
+double countStandarDeviasi(std::vector<int> data ,int lowerThreshold,int upperThreshold){
     int mean=countMean(data,lowerThreshold,upperThreshold);
     // std::cout << "mean = "<<mean << std::endl;
     double sum=0;
-    int n=0;
+    int n=0,size=0;
     for(int i= lowerThreshold;i<upperThreshold;i++){
-      for(int j=0;j<data[i];j++){
+      size=data.at(i);
+      for(int j=0;j<size;j++){
         sum=sum+(pow((i - mean),2));
         n++;
       }
@@ -75,25 +78,28 @@ double countStandarDeviasi(int data[],int lowerThreshold,int upperThreshold){
     else
       return 0;
 }
-double countMean(int data[],int start,int end){//end = index terakhir+1
+double countMean(std::vector<int> data ,int start,int end){//end = index terakhir+1
   int sum=0;
   int count=0;
+  int x;
   for(int i= start;i<end;i++){
-    count=count+i*data[i];
-    sum=sum+data[i];
+    x=data.at(i);
+    count=count+i*x;
+    sum=sum+x;
   }
   if (sum!=0)
     return (double) count/sum;
   else
     return 0;
 }
-double countVariance(int data[],int start,int end){
+double countVariance(std::vector<int> data ,int start,int end){
   int mean=countMean(data,start,end);
   // std::cout << "mean = "<<mean << std::endl;
   double sum=0;
-  int n=0;
+  int n=0,size=0;
   for(int i= start;i<end;i++){
-    for(int j=0;j<data[i];j++){
+    size=data.at(i);
+    for(int j=0;j<size;j++){
       sum=sum+(pow((i - mean),2));
       n++;
     }
@@ -108,10 +114,10 @@ double countVariance(int data[],int start,int end){
   else
     return 0;
 }
-double countSegment(int data[],int start,int end){
+double countSegment(std::vector<int> data ,int start,int end){
   double sum=0;
   for(int i= start;i<end;i++){
-    sum+=data[i];
+    sum+=data.at(i);
   }
   return sum;
 }
@@ -119,22 +125,21 @@ double countSegment(int data[],int start,int end){
 void drawHistogram(histogram h,string name){
     int hist_w = 512;
     int hist_h = 100;
-    double bin_w = cvRound((double) hist_w/256);
+    int bin_w = floor((double) hist_w/256);
     float bin_h = (float) hist_h/getModus(h.aray);
 
-    //cout<<hist_h<<"	"<<modus<<"	"<<bin_h;
-
+    std::cout << h.aray.size() << '\n';
     Mat histImage(hist_h, hist_w, CV_8UC1, Scalar(255, 255, 255));
-    for (int i=0;i<256;i++){
+    for (int i=0;i<h.aray.size();i++){
       //cout <<cvRound((double)bin_h*histogram[i])<<endl;
       line(histImage,  //img
         Point(bin_w*(i), hist_h), //point a
-        Point(bin_w*(i), hist_h - cvRound((double) h.aray[i]*bin_h)),//point b
+        Point(bin_w*(i), hist_h - cvRound((double) h.aray.at(i)*bin_h)),//point b
         Scalar(0,0,0),//color black
         bin_w,//thickness
         0,//linetype
         0);//Number of fractional bits in the point coordinates.
-        std::cout << "tes = "<< h.aray[i] << '\n';
+        // std::cout << cvRound((double) h.aray.at(i)*bin_h) << '\n';
     }
     showImage(histImage,name);
 }
@@ -149,11 +154,11 @@ void statistikHistogram(histogram h){
 }
 
 // Unknown Number versi Billy
-int countNumberB(int data[],int n){
+int countNumberB(std::vector<int> data ,int n){
   int ST=0;
   int SDKiri= cvRound(countStandarDeviasi(data,0,n));
-  int SDKanan=cvRound(countStandarDeviasi(data,n,255));
-  int SDTotal=cvRound(countStandarDeviasi(data,0,255));
+  int SDKanan=cvRound(countStandarDeviasi(data,n,256));
+  int SDTotal=cvRound(countStandarDeviasi(data,0,256));
   if (SDKiri==0||SDKanan==0){
     if(SDKiri>SDKanan){
       if (SDTotal>SDKiri)
@@ -176,11 +181,11 @@ int countNumberB(int data[],int n){
   return ST;
 }
 // Versi Kadek
-int countNumberK(int data[],int n){
+int countNumberK(std::vector<int> data ,int n){
   int ST=0;
   int SDKiri= cvRound(countStandarDeviasi(data,0,n));
-  int SDKanan=cvRound(countStandarDeviasi(data,n,255));
-  int SDTotal=cvRound(countStandarDeviasi(data,0,255));
+  int SDKanan=cvRound(countStandarDeviasi(data,n,256));
+  int SDTotal=cvRound(countStandarDeviasi(data,0,256));
   if (SDKiri==0||SDKanan==0){
     ST=cvRound(sqrt(SDKiri+SDKanan));
   }else{

@@ -1,6 +1,6 @@
 #ifndef OTSUTHRESHOLDING_H
 #define OTSUTHRESHOLDING_H
-#include "histogram.h"
+#include "histogram2.h"
 
 int otsuThresholding(histogram h);
 

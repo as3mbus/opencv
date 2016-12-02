@@ -2,7 +2,7 @@
 #define ANGLEDISTANCE_H
 
 #include "showImage.h"
-#include "histogram.h"
+#include "histogram2.h"
 #include "regionGrowing.h"
 #include "otsuThresholding.h"
 // #include <sstream>

@@ -1,5 +1,5 @@
 #include "showImage.h"
-#include "histogram.h"
+#include "histogram2.h"
 #include "cStretching.h"
 
 int sizeofp(int *p){
@@ -21,7 +21,7 @@ int main( int argc, char** argv ){
     showImage( imageGr, "Grayscale" );
 
     fillHistogram(&before,imageGr);
-    statistikHistogram(before,imageGr);
+    statistikHistogram(before);
     drawHistogram(before,"Histogram Before");
 
     waitKey(0);
@@ -31,7 +31,7 @@ int main( int argc, char** argv ){
     showImage(imageGrCS,"Contrast Stretched");
 
     fillHistogram(&after,imageGrCS);
-    statistikHistogram(after,imageGrCS);
+    statistikHistogram(after);
     drawHistogram(after,"Histogram After");
     waitKey(0); // Wait for a keystroke in the window
     return 0;

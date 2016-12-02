@@ -1,6 +1,7 @@
 #include "showImage.h"
-#include "histogram.h"
+#include "histogram2.h"
 #include "otsuThresholding.h"
+#include "imageSegmentation.h"
 #include "regionGrowing.h"
 
 int main( int argc, char** argv ){
@@ -31,8 +32,6 @@ int main( int argc, char** argv ){
       default:
         return 0;
     }
-
-
-    waitKey(0); // Wait for a keystroke in the window
+ // Wait for a keystroke in the window
     return 0;
 }

@@ -1,8 +1,7 @@
 #include "showImage.h"
-#include "histogram.h"
-#include "regionGrowing.h"
+#include "histogram2.h"
 #include "angleDistance.h"
-#include "angleDistance.h"
+#include "imageSegmentation.h"
 
 int main( int argc, char** argv ){
     Mat image=loadImage(argv[1]);
@@ -10,17 +9,22 @@ int main( int argc, char** argv ){
     // showImage(image,"Base Image");
     Mat imageGr=Grayscaler(image);
     showImage(imageGr,"Grayscale");
+    waitKey(0);
     fillHistogram(&before,imageGr);
-    statistikHistogram(before);
     drawHistogram(before,"testing");
     waitKey(0);
-    Mat Seg = seedByThreshold(imageGr,otsuThresholding(before),255);
+
+    statistikHistogram(before);
+    Mat Seg = singleThresholdSegmentation(imageGr,otsuThresholding(before),255);
     showImage(Seg,"Otsu");
     waitKey(0);
-    // Mat Bond = boundary(Seg,0);
-    position tes=getCentroid(Seg,0);
-    showImage(Seg,"Boundary");
-    DAShistogram DH1 = DistanceAngleHistogram(Seg,0 ,72);
+    int midObject;
+    std::cout << "what middle object intensity u see ? 255 (white )/ 0 Black" << '\n';
+    cin>>midObject;
+    Mat Bond = boundary(Seg,midObject);
+    position tes=getCentroid(Seg,midObject);
+    showImage(Bond,"Boundary");
+    DAShistogram DH1 = DistanceAngleHistogram(Seg,midObject ,72);
     drawHistogram(DH1,"Histo");
     string fileName=argv[1];
     fileName=+".DAS";
@@ -32,7 +36,7 @@ int main( int argc, char** argv ){
     // std::vector<double> haha2 =normalize(haha);
     // drawNormalHistogram(haha2,"Histo2");
     // showImage(boundary(Seg,0),"Testinger");
-    waitKey(0);
+    // waitKey(0);
     // std::cout << "Modus haha"<<getModus(haha) << std::endl;
     if(argc>2){
       string loadFile=argv[2];
@@ -42,9 +46,5 @@ int main( int argc, char** argv ){
       std::cout << "difference" <<difference(DH1,DH2)<< std::endl;
     }
 
-    // file<<
-
-
-    waitKey(0); // Wait for a keystroke in the window
     return 0;
 }
